@@ -1,5 +1,5 @@
 import React from 'react';
-import { Twitter, Disc as Discord, Github, Mail, ExternalLink } from 'lucide-react';
+import { X, Disc as Discord, GitHub, Mail, ExternalLink } from 'lucide-react';
 
 const Footer = () => {
   return (
@@ -18,13 +18,13 @@ const Footer = () => {
           </p>
           <div className="flex gap-4">
             <button className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-arc-blue/20 hover:border-arc-blue/50 transition-all">
-                <Twitter size={18} className="text-gray-400 hover:text-white" />
+                <X size={18} className="text-gray-400 hover:text-white" />
             </button>
             <button className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-arc-purple/20 hover:border-arc-purple/50 transition-all">
                 <Discord size={18} className="text-gray-400 hover:text-white" />
             </button>
             <button className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-gray-500/20 hover:border-gray-500 transition-all">
-                <Github size={18} className="text-gray-400 hover:text-white" />
+                <GitHub size={18} className="text-gray-400 hover:text-white" />
             </button>
           </div>
         </div>
