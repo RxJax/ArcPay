@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useWeb3 } from '../context/Web3Context';
+import { useWeb3, USDC_CONTRACT_ADDRESS, ERC20_ABI } from '../context/Web3Context';
 import { motion } from 'framer-motion';
 import { ethers } from 'ethers';
 import { 
@@ -53,11 +53,17 @@ const Dashboard = () => {
         } else {
             const provider = new ethers.BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
+            const usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, ERC20_ABI, signer);
             
-            const tx = await signer.sendTransaction({
-                to: recipient,
-                value: ethers.parseEther(amount)
-            });
+            // Fetch decimals dynamically
+            let decimals = 18;
+            try {
+                decimals = await usdcContract.decimals();
+            } catch (e) {
+                console.warn("Could not fetch decimals, defaulting to 18");
+            }
+            
+            const tx = await usdcContract.transfer(recipient, ethers.parseUnits(amount, decimals));
 
             addToast("Transaction submitted! Waiting for confirmation...", "info");
             const receipt = await tx.wait();

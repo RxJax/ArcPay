@@ -6,16 +6,23 @@ const Web3Context = createContext();
 export const useWeb3 = () => useContext(Web3Context);
 
 const ARC_TESTNET_CONFIG = {
-  chainId: '0x4CEBB2', // 5042002 in hex
+  chainId: '0x4cebb2', // 5042002 in hex
   chainName: 'Arc Testnet',
   nativeCurrency: {
-    name: 'USDC',
-    symbol: 'USDC',
+    name: 'Arc',
+    symbol: 'ARC',
     decimals: 18,
   },
   rpcUrls: ['https://rpc.testnet.arc.network'],
   blockExplorerUrls: ['https://testnet.arcscan.app'],
 };
+
+export const USDC_CONTRACT_ADDRESS = '0x3600000000000000000000000000000000000000';
+export const ERC20_ABI = [
+  "function balanceOf(address owner) view returns (uint256)",
+  "function decimals() view returns (uint8)",
+  "function transfer(address to, uint amount) returns (bool)"
+];
 
 export const Web3Provider = ({ children }) => {
   const [account, setAccount] = useState(null);
@@ -186,8 +193,16 @@ export const Web3Provider = ({ children }) => {
         if (account && !isDemoMode && window.ethereum) {
             try {
                 const provider = new ethers.BrowserProvider(window.ethereum);
-                const rawBalance = await provider.getBalance(account);
-                setBalance(parseFloat(ethers.formatEther(rawBalance)).toLocaleString(undefined, { minimumFractionDigits: 2 }));
+                const usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, ERC20_ABI, provider);
+                const rawBalance = await usdcContract.balanceOf(account);
+                
+                try {
+                  const decimals = await usdcContract.decimals();
+                  setBalance(parseFloat(ethers.formatUnits(rawBalance, decimals)).toLocaleString(undefined, { minimumFractionDigits: 2 }));
+                } catch (e) {
+                  // Fallback to 18 decimals if standard decimals() is not supported
+                  setBalance(parseFloat(ethers.formatUnits(rawBalance, 18)).toLocaleString(undefined, { minimumFractionDigits: 2 }));
+                }
             } catch (error) {
                 console.error("Failed to fetch balance", error);
             }
