@@ -54,6 +54,39 @@ export const Web3Provider = ({ children }) => {
   };
 
   const switchToArcTestnet = async () => {
+  if (!window.ethereum) {
+    addToast("MetaMask not detected!", "error");
+    return false;
+  }
+  try {
+    await window.ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: ARC_TESTNET_CONFIG.chainId }],
+    });
+    addToast("Switched to Arc Testnet", "success");
+    return true;
+  } catch (switchError) {
+    // 4902 indicates the chain is not added to MetaMask
+    if (switchError.code === 4902) {
+      try {
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [ARC_TESTNET_CONFIG],
+        });
+        addToast("Arc Testnet added and switched", "success");
+        return true;
+      } catch (addError) {
+        console.error("Failed to add Arc Testnet", addError);
+        addToast("Failed to add Arc Testnet to MetaMask", "error");
+        return false;
+      }
+    } else {
+      console.error("Failed to switch network", switchError);
+      addToast("Failed to switch to Arc Testnet", "error");
+      return false;
+    }
+  }
+};
     if (!window.ethereum) return false;
     try {
       console.log("Requesting network switch to Arc Testnet...");
