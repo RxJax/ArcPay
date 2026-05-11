@@ -26,6 +26,10 @@ export const Web3Provider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
   const [chainId, setChainId] = useState(null);
 
+  const isCorrectNetwork = (id) => {
+    return id && String(id).toLowerCase() === String(ARC_TESTNET_CONFIG.chainId).toLowerCase();
+  };
+
   const addToast = (message, type = 'success') => {
     const id = Date.now();
     setToasts((prev) => [...prev, { id, message, type }]);
@@ -79,7 +83,7 @@ export const Web3Provider = ({ children }) => {
         setAccount(accounts[0]);
         setChainId(currentChainId);
         
-        if (currentChainId !== ARC_TESTNET_CONFIG.chainId) {
+        if (!isCorrectNetwork(currentChainId)) {
           await switchToArcTestnet();
         }
 
@@ -126,7 +130,7 @@ export const Web3Provider = ({ children }) => {
 
       window.ethereum.on('chainChanged', (newChainId) => {
         setChainId(newChainId);
-        if (newChainId !== ARC_TESTNET_CONFIG.chainId && !isDemoMode) {
+        if (!isCorrectNetwork(newChainId) && !isDemoMode) {
           addToast("Unsupported network detected. Please switch to Arc Testnet.", "error");
         }
       });
@@ -162,7 +166,7 @@ export const Web3Provider = ({ children }) => {
       account,
       isDemoMode,
       balance,
-      network: chainId === ARC_TESTNET_CONFIG.chainId || isDemoMode ? 'Arc Testnet' : 'Wrong Network',
+      network: isCorrectNetwork(chainId) || isDemoMode ? 'Arc Testnet' : 'Wrong Network',
       isConnecting,
       connectWallet,
       disconnectWallet,
@@ -170,7 +174,7 @@ export const Web3Provider = ({ children }) => {
       toasts,
       addToast,
       removeToast,
-      isWrongNetwork: !isDemoMode && account && chainId !== ARC_TESTNET_CONFIG.chainId,
+      isWrongNetwork: !isDemoMode && account && !isCorrectNetwork(chainId),
       switchToArcTestnet
     }}>
       {children}
