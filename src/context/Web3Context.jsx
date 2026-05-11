@@ -11,7 +11,7 @@ const ARC_TESTNET_CONFIG = {
   nativeCurrency: {
     name: import.meta.env.VITE_PAYMENT_TOKEN_SYMBOL || 'USDC',
     symbol: import.meta.env.VITE_PAYMENT_TOKEN_SYMBOL || 'USDC',
-    decimals: Number(import.meta.env.VITE_PAYMENT_TOKEN_DECIMALS) || 6,
+    decimals: 18, // MetaMask STRICTLY requires nativeCurrency decimals to be 18 for EVM chains
   },
   rpcUrls: [import.meta.env.VITE_PAYMENT_RPC_URL || 'https://rpc.testnet.arc.network'],
   blockExplorerUrls: ['https://testnet.arcscan.app'],
