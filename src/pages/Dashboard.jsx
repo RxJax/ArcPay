@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useWeb3 } from '../context/Web3Context';
 import { motion } from 'framer-motion';
+import { ethers } from 'ethers';
 import { 
   Wallet, ArrowUpRight, ArrowDownLeft, Copy, ExternalLink, 
   RefreshCw, Send, ShieldCheck, Clock, Settings, Droplets, AlertCircle
