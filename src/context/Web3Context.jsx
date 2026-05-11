@@ -87,35 +87,7 @@ export const Web3Provider = ({ children }) => {
     }
   }
 };
-    if (!window.ethereum) return false;
-    try {
-      console.log("Requesting network switch to Arc Testnet...");
-      await window.ethereum.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: ARC_TESTNET_CONFIG.chainId }],
-      });
-      return true;
-    } catch (switchError) {
-      if (switchError.code === 4902) {
-        try {
-          console.log("Network not found. Adding Arc Testnet...");
-          await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [ARC_TESTNET_CONFIG],
-          });
-          return true;
-        } catch (addError) {
-          console.error("Failed to add Arc Testnet", addError);
-          addToast("Failed to add Arc Testnet to MetaMask", "error");
-          return false;
-        }
-      }
-      if (switchError.code === 4001) {
-        addToast("Network switch rejected by user", "error");
-      }
-      return false;
-    }
-  };
+
 
   // Helper to ensure connection, network, and return signer
   const ensureNetworkAndSigner = async () => {
