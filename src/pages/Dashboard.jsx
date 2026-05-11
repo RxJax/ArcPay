@@ -56,11 +56,11 @@ const Dashboard = () => {
             const usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, ERC20_ABI, signer);
             
             // Fetch decimals dynamically
-            let decimals = 18;
+            let decimals = Number(import.meta.env.VITE_PAYMENT_TOKEN_DECIMALS) || 6;
             try {
                 decimals = await usdcContract.decimals();
             } catch (e) {
-                console.warn("Could not fetch decimals, defaulting to 18");
+                console.warn(`Could not fetch decimals, defaulting to ${decimals}`);
             }
             
             const tx = await usdcContract.transfer(recipient, ethers.parseUnits(amount, decimals));

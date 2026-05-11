@@ -9,15 +9,15 @@ const ARC_TESTNET_CONFIG = {
   chainId: '0x4cebb2', // 5042002 in hex
   chainName: 'Arc Testnet',
   nativeCurrency: {
-    name: 'Arc',
-    symbol: 'ARC',
-    decimals: 18,
+    name: import.meta.env.VITE_PAYMENT_TOKEN_SYMBOL || 'USDC',
+    symbol: import.meta.env.VITE_PAYMENT_TOKEN_SYMBOL || 'USDC',
+    decimals: Number(import.meta.env.VITE_PAYMENT_TOKEN_DECIMALS) || 6,
   },
-  rpcUrls: ['https://rpc.testnet.arc.network'],
+  rpcUrls: [import.meta.env.VITE_PAYMENT_RPC_URL || 'https://rpc.testnet.arc.network'],
   blockExplorerUrls: ['https://testnet.arcscan.app'],
 };
 
-export const USDC_CONTRACT_ADDRESS = '0x3600000000000000000000000000000000000000';
+export const USDC_CONTRACT_ADDRESS = import.meta.env.VITE_PAYMENT_TOKEN_ADDRESS || '0x3600000000000000000000000000000000000000';
 export const ERC20_ABI = [
   "function balanceOf(address owner) view returns (uint256)",
   "function decimals() view returns (uint8)",
@@ -200,8 +200,8 @@ export const Web3Provider = ({ children }) => {
                   const decimals = await usdcContract.decimals();
                   setBalance(parseFloat(ethers.formatUnits(rawBalance, decimals)).toLocaleString(undefined, { minimumFractionDigits: 2 }));
                 } catch (e) {
-                  // Fallback to 18 decimals if standard decimals() is not supported
-                  setBalance(parseFloat(ethers.formatUnits(rawBalance, 18)).toLocaleString(undefined, { minimumFractionDigits: 2 }));
+                  const fallbackDecimals = Number(import.meta.env.VITE_PAYMENT_TOKEN_DECIMALS) || 6;
+                  setBalance(parseFloat(ethers.formatUnits(rawBalance, fallbackDecimals)).toLocaleString(undefined, { minimumFractionDigits: 2 }));
                 }
             } catch (error) {
                 console.error("Failed to fetch balance", error);
