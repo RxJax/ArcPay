@@ -6,15 +6,15 @@ const Web3Context = createContext();
 export const useWeb3 = () => useContext(Web3Context);
 
 const ARC_TESTNET_CONFIG = {
-  chainId: '0x4cebb2', // 5042002 in hex
-  chainName: 'Arc Testnet',
+  chainId: "0x4D8D02",
+  chainName: "Arc Testnet",
+  rpcUrls: ["https://rpc.testnet.arc.network"],
   nativeCurrency: {
-    name: import.meta.env.VITE_PAYMENT_TOKEN_SYMBOL || 'USDC',
-    symbol: import.meta.env.VITE_PAYMENT_TOKEN_SYMBOL || 'USDC',
-    decimals: 18, // MetaMask STRICTLY requires nativeCurrency decimals to be 18 for EVM chains
+    name: "USDC",
+    symbol: "USDC",
+    decimals: 6
   },
-  rpcUrls: [import.meta.env.VITE_PAYMENT_RPC_URL || 'https://rpc.testnet.arc.network'],
-  blockExplorerUrls: ['https://testnet.arcscan.app'],
+  blockExplorerUrls: ["https://testnet.arcscan.app"]
 };
 
 export const USDC_CONTRACT_ADDRESS = import.meta.env.VITE_PAYMENT_TOKEN_ADDRESS || '0x3600000000000000000000000000000000000000';
