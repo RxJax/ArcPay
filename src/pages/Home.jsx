@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { Zap, Shield, Globe, Cpu, ChevronRight, Activity, Users, Layers, ExternalLink } from 'lucide-react';
 
 const FeatureCard = ({ icon: Icon, title, description }) => (
@@ -70,18 +71,19 @@ const Home = () => {
               Arc Network Infrastructure
             </div>
             <h1 className="text-6xl md:text-8xl font-black mb-6 tracking-tight">
-              Fast Stablecoin <br />
-              <span className="gradient-text">Payments on Arc</span>
+              Build, Earn & <br />
+              <span className="gradient-text">Explore on Arc Testnet</span>
             </h1>
             <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-              Build and test scalable blockchain payments on the Arc Testnet. 
-              Experience instant USDC transfers with zero friction and high-performance infrastructure.
+              The ultimate gamified blockchain playground. Test Web3 apps, send USDC, deploy smart contracts, and earn XP on the most scalable L2 testnet.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button className="btn-primary flex items-center gap-2 group">
-                Connect Wallet <ChevronRight className="group-hover:translate-x-1 transition-transform" />
+              <Link to="/dashboard" className="btn-primary flex items-center gap-2 group">
+                Enter Testnet Hub <ChevronRight className="group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <button className="btn-secondary flex items-center gap-2">
+                <Zap size={18} /> Enter Demo Mode
               </button>
-              <button className="btn-secondary">Explore Infrastructure</button>
             </div>
           </motion.div>
 
@@ -116,12 +118,13 @@ const Home = () => {
       </section>
 
       {/* Stats Section */}
-      <section className="px-6 py-20 bg-arc-gray/50">
-        <div className="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatItem label="TPS" value="65,000+" sub="Peak performance" />
-          <StatItem label="Test Transactions" value="2.4M+" sub="Testnet Load" />
-          <StatItem label="Dev Wallets" value="45K+" sub="Building on Arc" />
-          <StatItem label="Uptime" value="100%" sub="Testnet Stability" />
+      <section className="px-6 py-20 bg-arc-gray/50 border-y border-white/5 relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-arc-blue/5 via-transparent to-arc-purple/5 opacity-50" />
+        <div className="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
+          <StatItem label="Test Transactions" value="2.4M+" sub="Total Volume" />
+          <StatItem label="Active Wallets" value="45K+" sub="Connected Users" />
+          <StatItem label="Deployed Contracts" value="12,500+" sub="Smart Contracts" />
+          <StatItem label="Active Builders" value="3,200+" sub="Ecosystem Devs" />
         </div>
       </section>
 

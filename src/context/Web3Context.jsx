@@ -26,6 +26,49 @@ export const Web3Provider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
   const [chainId, setChainId] = useState(null);
 
+  // Gamification State
+  const [xp, setXp] = useState(12450);
+  const [streak, setStreak] = useState(5);
+  const [lastCheckIn, setLastCheckIn] = useState(null);
+  const [badges, setBadges] = useState(['Early Builder', 'Arc Explorer']);
+
+  const handleCheckIn = async () => {
+    if (isDemoMode) {
+        setXp(prev => prev + 100);
+        setStreak(prev => prev + 1);
+        setLastCheckIn(new Date().toDateString());
+        addToast("Daily check-in successful! +100 XP", "success");
+        return;
+    }
+
+    if (!account || chainId !== ARC_TESTNET_CONFIG.chainId) {
+        addToast("Please connect to Arc Testnet to check in", "error");
+        return;
+    }
+
+    try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        
+        // Mock transaction for check-in
+        const tx = await signer.sendTransaction({
+            to: account,
+            value: ethers.parseEther("0.0000000000000001") // tiny mock fee
+        });
+        
+        addToast("Check-in transaction submitted...", "info");
+        await tx.wait();
+        
+        setXp(prev => prev + 100);
+        setStreak(prev => prev + 1);
+        setLastCheckIn(new Date().toDateString());
+        addToast("Daily check-in successful! +100 XP", "success");
+    } catch (error) {
+        console.error("Check-in failed", error);
+        addToast(error.reason || "Check-in failed.", "error");
+    }
+  };
+
   const isCorrectNetwork = (id) => {
     return id && String(id).toLowerCase() === String(ARC_TESTNET_CONFIG.chainId).toLowerCase();
   };
@@ -175,7 +218,12 @@ export const Web3Provider = ({ children }) => {
       addToast,
       removeToast,
       isWrongNetwork: !isDemoMode && account && !isCorrectNetwork(chainId),
-      switchToArcTestnet
+      switchToArcTestnet,
+      xp,
+      streak,
+      lastCheckIn,
+      badges,
+      handleCheckIn
     }}>
       {children}
     </Web3Context.Provider>

@@ -5,9 +5,13 @@ import Footer from './components/Footer';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import Leaderboard from './pages/Leaderboard';
+import Deploy from './pages/Deploy';
+import Faucet from './pages/Faucet';
+import Missions from './pages/Missions';
 import { useWeb3 } from './context/Web3Context';
 import Toast from './components/Toast';
 import { AnimatePresence } from 'framer-motion';
+import DashboardLayout from './layouts/DashboardLayout';
 
 function App() {
   const { isDemoMode, toasts, removeToast } = useWeb3();
@@ -20,17 +24,27 @@ function App() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-arc-purple/5 blur-[120px] rounded-full" />
       </div>
 
-      <Navbar />
-      
       <main>
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
+          {/* Public Route */}
+          <Route path="/" element={
+            <>
+              <Navbar />
+              <Home />
+              <Footer />
+            </>
+          } />
+
+          {/* Dashboard Routes wrapped in Sidebar Layout */}
+          <Route element={<DashboardLayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/deploy" element={<Deploy />} />
+            <Route path="/faucet" element={<Faucet />} />
+            <Route path="/missions" element={<Missions />} />
+          </Route>
         </Routes>
       </main>
-
-      <Footer />
 
       {/* Transaction Notifications */}
       <div className="fixed bottom-8 right-8 z-[100] flex flex-col gap-4">

@@ -4,19 +4,23 @@ import { motion } from 'framer-motion';
 import { ethers } from 'ethers';
 import { 
   Wallet, ArrowUpRight, ArrowDownLeft, Copy, ExternalLink, 
-  RefreshCw, Send, ShieldCheck, Clock, Settings, Droplets, AlertCircle
+  RefreshCw, Send, ShieldCheck, Clock, Settings, Droplets, AlertCircle, Zap, Award, Flame, Calendar, Check
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 const Dashboard = () => {
-  const { account, balance, network, isDemoMode, addToast, isWrongNetwork, switchToArcTestnet } = useWeb3();
+  const { 
+    account, balance, network, isDemoMode, addToast, isWrongNetwork, 
+    switchToArcTestnet, xp, streak, lastCheckIn, badges, handleCheckIn
+  } = useWeb3();
+  
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [txHistory, setTxHistory] = useState([
     { id: 1, type: 'send', amount: '45.00', status: 'Completed', date: '2 mins ago', hash: '0x82a9f2e5b4d2c8a1e7f0d3b6c4a9b2d5e8f1a0d3' },
     { id: 2, type: 'receive', amount: '120.50', status: 'Completed', date: '1 hour ago', hash: '0x3f1e9a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f' },
-    { id: 3, type: 'send', amount: '10.00', status: 'Completed', date: '5 hours ago', hash: '0x1c9f2e5a4b3c2d1e0f9a8b7c6d5e4f3a2b1c0d9e' },
   ]);
 
   const copyToClipboard = (text, type) => {
@@ -34,7 +38,6 @@ const Dashboard = () => {
     
     try {
         if (isDemoMode) {
-            // Simulate transaction
             await new Promise(resolve => setTimeout(resolve, 2000));
             const hash = `0x${Math.random().toString(16).slice(2, 42)}`;
             const newTx = {
@@ -48,17 +51,15 @@ const Dashboard = () => {
             setTxHistory([newTx, ...txHistory]);
             addToast(`[Demo] Successfully sent ${amount} USDC on Arc Testnet!`);
         } else {
-            // Real Transaction using ethers.js
             const provider = new ethers.BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
             
             const tx = await signer.sendTransaction({
                 to: recipient,
-                value: ethers.parseEther(amount) // Assuming USDC is the native gas token as per config
+                value: ethers.parseEther(amount)
             });
 
             addToast("Transaction submitted! Waiting for confirmation...", "info");
-            
             const receipt = await tx.wait();
             
             const newTx = {
@@ -89,9 +90,15 @@ const Dashboard = () => {
     }
   };
 
+  const onCheckIn = async () => {
+      setIsCheckingIn(true);
+      await handleCheckIn();
+      setIsCheckingIn(false);
+  };
+
   if (!account) {
     return (
-      <div className="pt-32 min-h-screen flex items-center justify-center px-6">
+      <div className="h-full flex items-center justify-center">
         <div className="glass p-12 rounded-[40px] text-center max-w-md w-full border-white/5 relative overflow-hidden">
           <div className="absolute top-0 right-0 p-8 opacity-5">
              <Wallet size={200} />
@@ -100,88 +107,93 @@ const Dashboard = () => {
             <Wallet className="text-arc-blue" size={40} />
           </div>
           <h2 className="text-2xl font-bold mb-4">Dashboard Access</h2>
-          <p className="text-gray-400 mb-8">Connect your MetaMask wallet or use Demo Mode to explore the ArcPay payment interface.</p>
-          <div className="flex flex-col gap-4">
-            <button className="btn-primary w-full">Connect Wallet</button>
-            <div className="text-xs text-gray-600 font-bold uppercase tracking-widest">or</div>
-            <button className="btn-secondary w-full">Try Demo Mode</button>
-          </div>
+          <p className="text-gray-400 mb-8">Please connect your wallet from the sidebar or enable Demo Mode to view the dashboard.</p>
         </div>
       </div>
     );
   }
 
+  const today = new Date().toDateString();
+  const alreadyCheckedIn = lastCheckIn === today;
+
   return (
-    <div className="pt-32 pb-20 px-6 max-w-7xl mx-auto">
+    <div className="space-y-8 pb-20">
       
-      {isWrongNetwork && (
-        <div className="mb-8 glass p-6 rounded-3xl border-red-500/20 bg-red-500/5 flex items-center justify-between gap-6">
-            <div className="flex items-center gap-4 text-red-400">
-                <AlertCircle size={32} />
-                <div>
-                    <div className="font-bold">Unsupported Network Detected</div>
-                    <div className="text-xs text-gray-500">ArcPay exclusively supports Arc Testnet. Your wallet is currently connected to another network.</div>
-                </div>
+      {/* Top Stats Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass p-6 rounded-[24px] border-white/5 flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-arc-blue/10 flex items-center justify-center shrink-0">
+                <Wallet className="text-arc-blue" size={24} />
             </div>
-            <button 
-                onClick={switchToArcTestnet}
-                className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-2xl font-bold transition-all shrink-0"
-            >
-                Switch to Arc Testnet
-            </button>
-        </div>
-      )}
+            <div>
+                <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">Testnet Balance</div>
+                <div className="text-2xl font-black">{balance} <span className="text-sm text-arc-blue">USDC</span></div>
+            </div>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass p-6 rounded-[24px] border-white/5 flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-arc-purple/10 flex items-center justify-center shrink-0">
+                <Zap className="text-arc-purple" size={24} />
+            </div>
+            <div>
+                <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">Ecosystem XP</div>
+                <div className="text-2xl font-black">{xp.toLocaleString()} <span className="text-sm text-arc-purple">XP</span></div>
+            </div>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass p-6 rounded-[24px] border-white/5 flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-orange-500/10 flex items-center justify-center shrink-0">
+                <Flame className="text-orange-500" size={24} />
+            </div>
+            <div>
+                <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">Activity Streak</div>
+                <div className="text-2xl font-black">{streak} <span className="text-sm text-orange-500">Days</span></div>
+            </div>
+        </motion.div>
+      </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
         
-        {/* Left Column: Wallet Info & Send */}
+        {/* Left Column */}
         <div className="lg:col-span-1 space-y-8">
-          {/* Wallet Card */}
+          
+          {/* Daily Check-in */}
           <motion.div 
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="glass p-8 rounded-[32px] relative overflow-hidden group border-white/5"
+            className="glass p-8 rounded-[32px] border-white/5 relative overflow-hidden"
           >
-            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                <ShieldCheck size={120} />
-            </div>
-            <div className="flex justify-between items-start mb-12">
-                <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${isWrongNetwork ? 'bg-red-500/20 text-red-400' : 'bg-arc-blue/20 text-arc-blue'}`}>
-                    {network}
-                </div>
-                <div className="flex gap-2">
-                    <a 
-                        href="https://faucet.circle.com/" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="p-2 bg-arc-purple/20 text-arc-purple rounded-lg hover:bg-arc-purple/30 transition-all flex items-center gap-2 text-[10px] font-bold uppercase"
-                    >
-                        <Droplets size={14} /> Circle Faucet
-                    </a>
-                </div>
-            </div>
-            <div className="mb-8">
-                <div className="text-gray-400 text-sm mb-1">Arc Testnet USDC</div>
-                <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-black">{balance}</span>
-                    <span className="text-xl font-bold text-arc-blue">USDC</span>
-                </div>
-            </div>
-            <div className="flex items-center gap-3 p-3 bg-black/40 rounded-2xl border border-white/5">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-arc-blue/20 to-arc-purple/20 flex items-center justify-center shrink-0">
-                    <Wallet size={20} className="text-arc-blue" />
-                </div>
-                <div className="overflow-hidden">
-                    <div className="text-[10px] text-gray-500 uppercase font-bold">Wallet Address</div>
-                    <div className="text-sm font-mono truncate">{account}</div>
-                </div>
-                <button 
-                    onClick={() => copyToClipboard(account, "Address")}
-                    className="ml-auto p-2 hover:text-arc-blue transition-colors"
-                >
-                    <Copy size={16} />
-                </button>
-            </div>
+              <div className="absolute top-0 right-0 p-6 opacity-10">
+                  <Calendar size={100} />
+              </div>
+              <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
+                  Daily Check-in
+              </h3>
+              <p className="text-sm text-gray-400 mb-6">Sign a transaction daily to build your streak and earn ecosystem XP.</p>
+              
+              <button 
+                  onClick={onCheckIn}
+                  disabled={alreadyCheckedIn || isCheckingIn || isWrongNetwork}
+                  className={`w-full py-4 rounded-xl font-bold transition-all flex justify-center items-center gap-2 ${
+                      alreadyCheckedIn ? 'bg-white/5 text-gray-500 cursor-not-allowed' :
+                      isWrongNetwork ? 'bg-red-500/20 text-red-500 cursor-not-allowed' :
+                      'bg-gradient-to-r from-arc-blue to-arc-purple text-white hover:opacity-90'
+                  }`}
+              >
+                  {isCheckingIn ? <RefreshCw className="animate-spin" size={18} /> : alreadyCheckedIn ? <Check size={18} /> : <Zap size={18} />}
+                  {isCheckingIn ? 'Signing...' : alreadyCheckedIn ? 'Checked In Today' : 'Check In (+100 XP)'}
+              </button>
+              
+              <div className="mt-6 pt-6 border-t border-white/5">
+                  <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Your Badges</div>
+                  <div className="flex flex-wrap gap-2">
+                      {badges.map((badge, idx) => (
+                          <div key={idx} className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-bold text-gray-300 flex items-center gap-2">
+                              <Award size={12} className="text-arc-blue" /> {badge}
+                          </div>
+                      ))}
+                  </div>
+              </div>
           </motion.div>
 
           {/* Send USDC Card */}
@@ -192,7 +204,7 @@ const Dashboard = () => {
              className="glass p-8 rounded-[32px] border-white/5"
           >
             <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                <Send size={20} className="text-arc-blue" /> Send USDC
+                <Send size={20} className="text-arc-blue" /> Send Testnet USDC
             </h3>
             <div className="space-y-4">
                 <div>
@@ -226,9 +238,6 @@ const Dashboard = () => {
                     {isSending ? <RefreshCw className="animate-spin" /> : <Send size={18} />}
                     {isSending ? 'Sending Transaction...' : isWrongNetwork ? 'Wrong Network' : 'Confirm Transfer'}
                 </button>
-                <div className="text-[10px] text-center text-gray-600 font-bold uppercase tracking-widest mt-2">
-                    Transactions are free on Arc Testnet
-                </div>
             </div>
           </motion.div>
         </div>
@@ -238,7 +247,7 @@ const Dashboard = () => {
             <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="glass rounded-[32px] overflow-hidden border-white/5"
+                className="glass rounded-[32px] overflow-hidden border-white/5 h-full flex flex-col"
             >
                 <div className="p-8 border-b border-white/5 flex justify-between items-center bg-white/5">
                     <h3 className="text-xl font-bold flex items-center gap-2">
@@ -250,10 +259,10 @@ const Dashboard = () => {
                         rel="noopener noreferrer"
                         className="text-xs font-bold text-arc-blue flex items-center gap-1 hover:underline"
                     >
-                        ArcScan <ExternalLink size={12} />
+                        View all on ArcScan <ExternalLink size={12} />
                     </a>
                 </div>
-                <div className="divide-y divide-white/5">
+                <div className="divide-y divide-white/5 flex-1 overflow-y-auto max-h-[500px] no-scrollbar">
                     {txHistory.map((tx) => (
                         <div key={tx.id} className="p-6 flex items-center justify-between hover:bg-white/5 transition-colors">
                             <div className="flex items-center gap-4">
@@ -291,28 +300,6 @@ const Dashboard = () => {
                     ))}
                 </div>
             </motion.div>
-
-            {/* Smart Contract Showcase Placeholder */}
-            <div className="glass p-8 rounded-[32px] border-arc-blue/10 relative overflow-hidden group">
-                <div className="absolute bottom-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity translate-y-1/4 translate-x-1/4">
-                    <RefreshCw size={240} className="animate-spin-slow" />
-                </div>
-                <div className="relative z-10">
-                    <div className="text-arc-blue font-bold text-xs uppercase tracking-widest mb-2">Advanced Infrastructure</div>
-                    <h4 className="text-2xl font-black mb-4">Smart Contract Integration</h4>
-                    <p className="text-gray-400 mb-8 max-w-xl">
-                        Connect your custom Solidity contracts to ArcPay. We support automated recurring payments, multi-sig escrow, and yield-bearing stablecoin logic.
-                    </p>
-                    <div className="flex gap-4">
-                        <button className="px-6 py-2 bg-white/5 border border-white/10 rounded-xl font-bold text-sm hover:bg-white/10 transition-all">
-                            View API Docs
-                        </button>
-                        <button className="px-6 py-2 bg-arc-blue/10 text-arc-blue border border-arc-blue/20 rounded-xl font-bold text-sm hover:bg-arc-blue/20 transition-all">
-                            Deploy Example
-                        </button>
-                    </div>
-                </div>
-            </div>
         </div>
 
       </div>
