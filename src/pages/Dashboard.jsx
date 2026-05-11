@@ -23,7 +23,7 @@ const Dashboard = () => {
     addToast(`${type} copied to clipboard!`, "info");
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (isWrongNetwork) {
         addToast("Please switch to Arc Testnet to send transactions", "error");
         return;
@@ -31,29 +31,61 @@ const Dashboard = () => {
     if (!recipient || !amount) return;
     setIsSending(true);
     
-    // Simulate transaction
-    setTimeout(() => {
-      setIsSending(false);
-      const hash = `0x${Math.random().toString(16).slice(2, 42)}`;
-      const newTx = {
-        id: Date.now(),
-        type: 'send',
-        amount: parseFloat(amount).toFixed(2),
-        status: 'Completed',
-        date: 'Just now',
-        hash: hash
-      };
-      setTxHistory([newTx, ...txHistory]);
-      setAmount('');
-      setRecipient('');
-      addToast(`Successfully sent ${amount} USDC on Arc Testnet!`);
-      confetti({
-        particleCount: 150,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#00d2ff', '#9d50bb', '#ffffff']
-      });
-    }, 2000);
+    try {
+        if (isDemoMode) {
+            // Simulate transaction
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            const hash = `0x${Math.random().toString(16).slice(2, 42)}`;
+            const newTx = {
+                id: Date.now(),
+                type: 'send',
+                amount: parseFloat(amount).toFixed(2),
+                status: 'Completed',
+                date: 'Just now',
+                hash: hash
+            };
+            setTxHistory([newTx, ...txHistory]);
+            addToast(`[Demo] Successfully sent ${amount} USDC on Arc Testnet!`);
+        } else {
+            // Real Transaction using ethers.js
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            
+            const tx = await signer.sendTransaction({
+                to: recipient,
+                value: ethers.parseEther(amount) // Assuming USDC is the native gas token as per config
+            });
+
+            addToast("Transaction submitted! Waiting for confirmation...", "info");
+            
+            const receipt = await tx.wait();
+            
+            const newTx = {
+                id: Date.now(),
+                type: 'send',
+                amount: parseFloat(amount).toFixed(2),
+                status: 'Completed',
+                date: 'Just now',
+                hash: receipt.hash
+            };
+            setTxHistory([newTx, ...txHistory]);
+            addToast(`Successfully sent ${amount} USDC on Arc Testnet!`);
+        }
+
+        setAmount('');
+        setRecipient('');
+        confetti({
+            particleCount: 150,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#00d2ff', '#9d50bb', '#ffffff']
+        });
+    } catch (error) {
+        console.error("Transaction failed", error);
+        addToast(error.reason || "Transaction failed. Check your balance.", "error");
+    } finally {
+        setIsSending(false);
+    }
   };
 
   if (!account) {
@@ -118,12 +150,12 @@ const Dashboard = () => {
                 </div>
                 <div className="flex gap-2">
                     <a 
-                        href="https://faucet.arc.network" 
+                        href="https://faucet.circle.com/" 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="p-2 bg-arc-purple/20 text-arc-purple rounded-lg hover:bg-arc-purple/30 transition-all flex items-center gap-2 text-[10px] font-bold uppercase"
                     >
-                        <Droplets size={14} /> Faucet
+                        <Droplets size={14} /> Circle Faucet
                     </a>
                 </div>
             </div>

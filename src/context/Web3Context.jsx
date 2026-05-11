@@ -133,6 +133,22 @@ export const Web3Provider = ({ children }) => {
     }
   }, [isDemoMode]);
 
+  // Fetch real balance
+  useEffect(() => {
+    const fetchBalance = async () => {
+        if (account && !isDemoMode && window.ethereum) {
+            try {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const rawBalance = await provider.getBalance(account);
+                setBalance(parseFloat(ethers.formatEther(rawBalance)).toLocaleString(undefined, { minimumFractionDigits: 2 }));
+            } catch (error) {
+                console.error("Failed to fetch balance", error);
+            }
+        }
+    };
+    fetchBalance();
+  }, [account, chainId, isDemoMode]);
+
   // Persist connection
   useEffect(() => {
     const wasConnected = localStorage.getItem('arc_connected');

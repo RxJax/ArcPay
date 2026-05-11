@@ -64,14 +64,6 @@ const Navbar = () => {
               {link.name}
             </Link>
           ))}
-          <a 
-            href="https://faucet.arc.network" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-sm font-bold text-arc-purple flex items-center gap-1 hover:text-arc-blue transition-colors"
-          >
-            Faucet <ExternalLink size={12} />
-          </a>
         </div>
 
         <div className="flex items-center gap-4">
@@ -122,7 +114,6 @@ const Navbar = () => {
                 {link.name}
               </Link>
             ))}
-            <a href="https://faucet.arc.network" target="_blank" className="text-lg font-bold text-arc-purple">Faucet</a>
             <div className="pt-4 border-t border-white/10">
                 <button 
                     onClick={toggleDemoMode}
