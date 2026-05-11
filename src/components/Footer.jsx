@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Disc as Discord, GitHub, Mail, ExternalLink } from 'lucide-react';
+import { X, MessageCircle as Discord, Code as GitHub, Mail, ExternalLink } from 'lucide-react';
 
 const Footer = () => {
   return (
