@@ -27,8 +27,8 @@ export const ERC20_ABI = [
 export const Web3Provider = ({ children }) => {
   const [account, setAccount] = useState(null);
   const [isDemoMode, setIsDemoMode] = useState(false);
-  const [balance, setBalance] = useState('1,250.00');
-  const [network, setNetwork] = useState('Arc Testnet');
+  const [balance, setBalance] = useState('0.00');
+  const [network, setNetwork] = useState('Disconnected');
   const [isConnecting, setIsConnecting] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [chainId, setChainId] = useState(null);
@@ -38,43 +38,6 @@ export const Web3Provider = ({ children }) => {
   const [streak, setStreak] = useState(5);
   const [lastCheckIn, setLastCheckIn] = useState(null);
   const [badges, setBadges] = useState(['Early Builder', 'Arc Explorer']);
-
-  const handleCheckIn = async () => {
-    if (isDemoMode) {
-        setXp(prev => prev + 100);
-        setStreak(prev => prev + 1);
-        setLastCheckIn(new Date().toDateString());
-        addToast("Daily check-in successful! +100 XP", "success");
-        return;
-    }
-
-    if (!account || chainId !== ARC_TESTNET_CONFIG.chainId) {
-        addToast("Please connect to Arc Testnet to check in", "error");
-        return;
-    }
-
-    try {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
-        
-        // Mock transaction for check-in
-        const tx = await signer.sendTransaction({
-            to: account,
-            value: ethers.parseEther("0.0000000000000001") // tiny mock fee
-        });
-        
-        addToast("Check-in transaction submitted...", "info");
-        await tx.wait();
-        
-        setXp(prev => prev + 100);
-        setStreak(prev => prev + 1);
-        setLastCheckIn(new Date().toDateString());
-        addToast("Daily check-in successful! +100 XP", "success");
-    } catch (error) {
-        console.error("Check-in failed", error);
-        addToast(error.reason || "Check-in failed.", "error");
-    }
-  };
 
   const isCorrectNetwork = (id) => {
     return id && String(id).toLowerCase() === String(ARC_TESTNET_CONFIG.chainId).toLowerCase();
@@ -91,25 +54,77 @@ export const Web3Provider = ({ children }) => {
   };
 
   const switchToArcTestnet = async () => {
-    if (!window.ethereum) return;
+    if (!window.ethereum) return false;
     try {
+      console.log("Requesting network switch to Arc Testnet...");
       await window.ethereum.request({
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: ARC_TESTNET_CONFIG.chainId }],
       });
+      return true;
     } catch (switchError) {
-      // This error code indicates that the chain has not been added to MetaMask.
       if (switchError.code === 4902) {
         try {
+          console.log("Network not found. Adding Arc Testnet...");
           await window.ethereum.request({
             method: 'wallet_addEthereumChain',
             params: [ARC_TESTNET_CONFIG],
           });
+          return true;
         } catch (addError) {
           console.error("Failed to add Arc Testnet", addError);
           addToast("Failed to add Arc Testnet to MetaMask", "error");
+          return false;
         }
       }
+      if (switchError.code === 4001) {
+        addToast("Network switch rejected by user", "error");
+      }
+      return false;
+    }
+  };
+
+  // Helper to ensure connection, network, and return signer
+  const ensureNetworkAndSigner = async () => {
+    if (isDemoMode) return null; // Handled separately
+    if (!window.ethereum) {
+      addToast("MetaMask not detected! Please install MetaMask.", "error");
+      throw new Error("No MetaMask");
+    }
+
+    try {
+      // 1. Explicitly request accounts (TRIGGERS POPUP)
+      console.log("Requesting accounts...");
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const currentAccount = accounts[0];
+      setAccount(currentAccount);
+
+      // 2. Check Network and Switch if needed
+      let currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
+      setChainId(currentChainId);
+
+      if (!isCorrectNetwork(currentChainId)) {
+        addToast("Please switch to Arc Testnet to continue", "warning");
+        const switched = await switchToArcTestnet();
+        if (!switched) {
+            throw new Error("Wrong Network");
+        }
+        // update chain ID after switch
+        currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
+        setChainId(currentChainId);
+      }
+
+      // 3. Create provider and return signer
+      console.log("Creating BrowserProvider...");
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      return { signer, currentAccount };
+    } catch (error) {
+      console.error("Wallet interaction failed:", error);
+      if (error.code === 4001) {
+          addToast("Action rejected in MetaMask", "error");
+      }
+      throw error;
     }
   };
 
@@ -124,35 +139,67 @@ export const Web3Provider = ({ children }) => {
       return;
     }
 
-    if (window.ethereum) {
-      try {
-        setIsConnecting(true);
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
-        
-        setAccount(accounts[0]);
-        setChainId(currentChainId);
-        
-        if (!isCorrectNetwork(currentChainId)) {
-          await switchToArcTestnet();
-        }
+    setIsConnecting(true);
+    try {
+      await ensureNetworkAndSigner();
+      addToast("Wallet connected successfully", "success");
+    } catch (error) {
+      // Errors handled in ensureNetworkAndSigner
+    } finally {
+      setIsConnecting(false);
+    }
+  };
 
-        setIsConnecting(false);
-        addToast("Wallet connected successfully", "success");
-        localStorage.setItem('arc_connected', 'true');
-      } catch (error) {
-        console.error("User denied account access", error);
-        setIsConnecting(false);
-        addToast("Connection failed or rejected", "error");
-      }
-    } else {
-      addToast("MetaMask not detected!", "error");
+  const handleCheckIn = async () => {
+    if (isDemoMode) {
+        setXp(prev => prev + 100);
+        setStreak(prev => prev + 1);
+        setLastCheckIn(new Date().toDateString());
+        addToast("Daily check-in successful! +100 XP", "success");
+        return;
+    }
+
+    try {
+        const { signer, currentAccount } = await ensureNetworkAndSigner();
+        
+        console.log("Executing Check-In Transaction (0 USDC transfer)...");
+        addToast("Please confirm the check-in transaction in MetaMask", "info");
+        
+        const usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, ERC20_ABI, signer);
+        
+        // Option B: send minimal USDC testnet transfer (0 USDC to self)
+        const tx = await usdcContract.transfer(currentAccount, 0);
+        
+        addToast("Transaction submitted! Waiting for confirmation...", "info");
+        const receipt = await tx.wait();
+        console.log("Check-in confirmed:", receipt.hash);
+        
+        setXp(prev => prev + 100);
+        setStreak(prev => prev + 1);
+        setLastCheckIn(new Date().toDateString());
+        
+        addToast(
+            <div>
+                Check-in successful! +100 XP<br/>
+                <a href={`https://testnet.arcscan.app/tx/${receipt.hash}`} target="_blank" rel="noreferrer" className="underline font-bold text-arc-blue mt-1 block">
+                    View on ArcScan
+                </a>
+            </div>, 
+            "success"
+        );
+    } catch (error) {
+        console.error("Check-in failed", error);
+        // Error toast already handled by ensureNetworkAndSigner for 4001
+        if (error.code !== 4001 && error.message !== "Wrong Network" && error.message !== "No MetaMask") {
+            addToast("Check-in transaction failed.", "error");
+        }
     }
   };
 
   const disconnectWallet = () => {
     setAccount(null);
-    localStorage.removeItem('arc_connected');
+    setBalance('0.00');
+    setChainId(null);
     addToast("Wallet disconnected", "info");
   };
 
@@ -160,7 +207,6 @@ export const Web3Provider = ({ children }) => {
     setIsDemoMode(!isDemoMode);
     if (!isDemoMode) {
       setAccount(null);
-      localStorage.removeItem('arc_connected');
     } else {
       connectWallet();
     }
@@ -169,28 +215,35 @@ export const Web3Provider = ({ children }) => {
   // Listen for account and chain changes
   useEffect(() => {
     if (window.ethereum) {
-      window.ethereum.on('accountsChanged', (accounts) => {
+      const handleAccountsChanged = (accounts) => {
         if (accounts.length > 0) {
           setAccount(accounts[0]);
         } else {
           setAccount(null);
-          localStorage.removeItem('arc_connected');
         }
-      });
+      };
 
-      window.ethereum.on('chainChanged', (newChainId) => {
+      const handleChainChanged = (newChainId) => {
         setChainId(newChainId);
-        if (!isCorrectNetwork(newChainId) && !isDemoMode) {
+        if (!isCorrectNetwork(newChainId) && !isDemoMode && account) {
           addToast("Unsupported network detected. Please switch to Arc Testnet.", "error");
         }
-      });
+      };
+
+      window.ethereum.on('accountsChanged', handleAccountsChanged);
+      window.ethereum.on('chainChanged', handleChainChanged);
+
+      return () => {
+        window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+        window.ethereum.removeListener('chainChanged', handleChainChanged);
+      };
     }
-  }, [isDemoMode]);
+  }, [isDemoMode, account]);
 
   // Fetch real balance
   useEffect(() => {
     const fetchBalance = async () => {
-        if (account && !isDemoMode && window.ethereum) {
+        if (account && !isDemoMode && window.ethereum && isCorrectNetwork(chainId)) {
             try {
                 const provider = new ethers.BrowserProvider(window.ethereum);
                 const usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, ERC20_ABI, provider);
@@ -206,25 +259,19 @@ export const Web3Provider = ({ children }) => {
             } catch (error) {
                 console.error("Failed to fetch balance", error);
             }
+        } else if (!account) {
+            setBalance('0.00');
         }
     };
     fetchBalance();
   }, [account, chainId, isDemoMode]);
-
-  // Persist connection
-  useEffect(() => {
-    const wasConnected = localStorage.getItem('arc_connected');
-    if (wasConnected === 'true' && window.ethereum) {
-      connectWallet();
-    }
-  }, []);
 
   return (
     <Web3Context.Provider value={{
       account,
       isDemoMode,
       balance,
-      network: isCorrectNetwork(chainId) || isDemoMode ? 'Arc Testnet' : 'Wrong Network',
+      network: !account ? 'Disconnected' : isCorrectNetwork(chainId) || isDemoMode ? 'Arc Testnet' : 'Wrong Network',
       isConnecting,
       connectWallet,
       disconnectWallet,
@@ -238,7 +285,8 @@ export const Web3Provider = ({ children }) => {
       streak,
       lastCheckIn,
       badges,
-      handleCheckIn
+      handleCheckIn,
+      ensureNetworkAndSigner
     }}>
       {children}
     </Web3Context.Provider>

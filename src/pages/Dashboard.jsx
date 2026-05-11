@@ -11,7 +11,7 @@ import confetti from 'canvas-confetti';
 const Dashboard = () => {
   const { 
     account, balance, network, isDemoMode, addToast, isWrongNetwork, 
-    switchToArcTestnet, xp, streak, lastCheckIn, badges, handleCheckIn
+    switchToArcTestnet, xp, streak, lastCheckIn, badges, handleCheckIn, ensureNetworkAndSigner
   } = useWeb3();
   
   const [recipient, setRecipient] = useState('');
@@ -51,8 +51,7 @@ const Dashboard = () => {
             setTxHistory([newTx, ...txHistory]);
             addToast(`[Demo] Successfully sent ${amount} USDC on Arc Testnet!`);
         } else {
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const signer = await provider.getSigner();
+            const { signer } = await ensureNetworkAndSigner();
             const usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, ERC20_ABI, signer);
             
             // Fetch decimals dynamically
@@ -90,7 +89,9 @@ const Dashboard = () => {
         });
     } catch (error) {
         console.error("Transaction failed", error);
-        addToast(error.reason || "Transaction failed. Check your balance.", "error");
+        if (error.code !== 4001 && error.message !== "Wrong Network" && error.message !== "No MetaMask") {
+            addToast(error.reason || "Transaction failed. Check your balance.", "error");
+        }
     } finally {
         setIsSending(false);
     }
